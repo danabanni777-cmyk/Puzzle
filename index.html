@@ -2,96 +2,78 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<title>Пазл</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Книжковий пазл</title>
 
 <style>
-    * {
-        box-sizing: border-box;
-    }
+* {
+    box-sizing: border-box;
+}
 
-    body {
-        margin: 0;
-        min-height: 100vh;
-        background: #111;
-        color: white;
-        font-family: Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 15px;
-    }
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px;
+}
 
-    .game {
-        width: 100%;
-        max-width: 500px;
-        text-align: center;
-    }
+.game {
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
 
-    h1 {
-        margin: 0 0 10px;
-        font-size: 28px;
-    }
+h1 {
+    margin: 0 0 8px;
+}
 
-    .info {
-        margin-bottom: 15px;
-        font-size: 16px;
-        opacity: 0.9;
-    }
+.info {
+    margin-bottom: 15px;
+}
 
-    #board {
-        width: 100%;
-        aspect-ratio: 1 / 1;
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        grid-template-rows: repeat(4, 1fr);
-        gap: 2px;
-        background: #000;
-        padding: 2px;
-        border-radius: 10px;
-        overflow: hidden;
-        touch-action: none;
-        user-select: none;
-    }
+#board {
+    width: 100%;
+    aspect-ratio: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    background: #000;
+    padding: 2px;
+    touch-action: none;
+}
 
-    .tile {
-        position: relative;
-        background-image: url("./1785174577223.png");
-        background-size: 400% 400%;
-        border-radius: 3px;
-        cursor: grab;
-        touch-action: none;
-    }
+.tile {
+    width: 100%;
+    aspect-ratio: 1;
+    background-repeat: no-repeat;
+    background-image: url("./1785174577223.png");
+    background-size: 400% 400%;
+    cursor: grab;
+}
 
-    .tile.dragging {
-        opacity: 0.5;
-        transform: scale(0.95);
-    }
+.tile.dragging {
+    opacity: 0.5;
+}
 
-    .selected {
-        outline: 4px solid white;
-        z-index: 5;
-    }
+button {
+    margin-top: 18px;
+    padding: 12px 25px;
+    border: 0;
+    border-radius: 10px;
+    font-size: 17px;
+    font-weight: bold;
+}
 
-    button {
-        margin-top: 18px;
-        padding: 12px 24px;
-        border: none;
-        border-radius: 10px;
-        background: white;
-        color: #111;
-        font-size: 17px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-
-    #message {
-        margin-top: 15px;
-        font-size: 22px;
-        font-weight: bold;
-        min-height: 30px;
-    }
+#message {
+    margin-top: 15px;
+    font-size: 22px;
+    font-weight: bold;
+}
 </style>
 </head>
 
@@ -99,17 +81,17 @@
 
 <div class="game">
 
-    <h1>🧩 Пазл</h1>
+<h1>🧩 Книжковий пазл</h1>
 
-    <div class="info">
-        Перетягуй деталі пальцем
-    </div>
+<div class="info">
+Перетягуй деталі пальцем
+</div>
 
-    <div id="board"></div>
+<div id="board"></div>
 
-    <button onclick="newGame()">🔄 Перемішати</button>
+<button onclick="newGame()">🔄 Перемішати</button>
 
-    <div id="message"></div>
+<div id="message"></div>
 
 </div>
 
@@ -119,157 +101,112 @@ const board = document.getElementById("board");
 const message = document.getElementById("message");
 
 const size = 4;
-const total = size * size;
+const total = 16;
 
-let tiles = [];
-let draggedTile = null;
+function createTile(number) {
 
-function createGame() {
+    const tile = document.createElement("div");
 
-    board.innerHTML = "";
-    message.textContent = "";
+    tile.className = "tile";
 
-    tiles = [];
+    tile.dataset.correct = number;
 
-    for (let i = 0; i < total; i++) {
+    const row = Math.floor(number / size);
+    const col = number % size;
 
-        const tile = document.createElement("div");
+    tile.style.backgroundPosition =
+        (col * 100 / 3) + "% " +
+        (row * 100 / 3) + "%";
 
-        tile.className = "tile";
-
-        tile.dataset.correct = i;
-
-        const row = Math.floor(i / size);
-        const col = i % size;
-
-        tile.style.backgroundPosition =
-            `${col * 100 / (size - 1)}% ${row * 100 / (size - 1)}%`;
-
-        tiles.push(tile);
-    }
-
-    shuffle(tiles);
-
-    tiles.forEach(tile => board.appendChild(tile));
-
-    addDragEvents();
-}
-
-function shuffle(array) {
-
-    for (let i = array.length - 1; i > 0; i--) {
-
-        const j = Math.floor(Math.random() * (i + 1));
-
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-
-    // Не дозволяємо випадково отримати вже складений пазл
-    if (isSolved()) {
-        shuffle(array);
-    }
-}
-
-function addDragEvents() {
-
-    const allTiles = document.querySelectorAll(".tile");
-
-    allTiles.forEach(tile => {
-
-        tile.addEventListener("pointerdown", startDrag);
-
+    tile.addEventListener("click", function() {
+        selectTile(tile);
     });
+
+    return tile;
 }
 
-function startDrag(event) {
+let selected = null;
 
-    event.preventDefault();
+function selectTile(tile) {
 
-    draggedTile = event.currentTarget;
+    if (!selected) {
 
-    draggedTile.classList.add("dragging");
-
-    draggedTile.setPointerCapture(event.pointerId);
-
-    draggedTile.addEventListener("pointerup", endDrag, { once: true });
-}
-
-function endDrag(event) {
-
-    if (!draggedTile) return;
-
-    draggedTile.classList.remove("dragging");
-
-    const x = event.clientX;
-    const y = event.clientY;
-
-    draggedTile.style.pointerEvents = "none";
-
-    const target = document.elementFromPoint(x, y);
-
-    draggedTile.style.pointerEvents = "auto";
-
-    if (target && target.classList.contains("tile") && target !== draggedTile) {
-
-        swapTiles(draggedTile, target);
-    }
-
-    draggedTile = null;
-
-    checkWin();
-}
-
-function swapTiles(first, second) {
-
-    const firstNext = first.nextSibling;
-    const secondNext = second.nextSibling;
-
-    if (firstNext === second) {
-
-        board.insertBefore(second, first);
-
-    } else if (secondNext === first) {
-
-        board.insertBefore(first, second);
+        selected = tile;
+        tile.style.outline = "4px solid white";
 
     } else {
 
-        board.insertBefore(first, secondNext);
-        board.insertBefore(second, firstNext);
-    }
-}
+        if (selected !== tile) {
 
-function isSolved() {
+            swap(selected, tile);
 
-    const currentTiles = document.querySelectorAll(".tile");
-
-    for (let i = 0; i < total; i++) {
-
-        if (Number(currentTiles[i].dataset.correct) !== i) {
-            return false;
         }
-    }
 
-    return true;
+        selected.style.outline = "";
+        selected = null;
+
+        checkWin();
+    }
 }
 
-function checkWin() {
+function swap(a, b) {
 
-    if (isSolved()) {
+    const aNext = a.nextSibling;
+    const bNext = b.nextSibling;
 
-        message.textContent = "🎉 Пазл складено!";
+    if (aNext === b) {
 
-        document.querySelectorAll(".tile").forEach(tile => {
-            tile.style.cursor = "default";
-        });
+        board.insertBefore(b, a);
+
+    } else if (bNext === a) {
+
+        board.insertBefore(a, b);
+
+    } else {
+
+        board.insertBefore(a, bNext);
+        board.insertBefore(b, aNext);
     }
 }
 
 function newGame() {
-    createGame();
+
+    board.innerHTML = "";
+    message.textContent = "";
+    selected = null;
+
+    let numbers = [];
+
+    for (let i = 0; i < total; i++) {
+        numbers.push(i);
+    }
+
+    do {
+
+        numbers.sort(() => Math.random() - 0.5);
+
+    } while (numbers.every((n, i) => n === i));
+
+    numbers.forEach(number => {
+        board.appendChild(createTile(number));
+    });
 }
 
-createGame();
+function checkWin() {
+
+    const tiles = board.children;
+
+    for (let i = 0; i < total; i++) {
+
+        if (Number(tiles[i].dataset.correct) !== i) {
+            return;
+        }
+    }
+
+    message.textContent = "🎉 Пазл складено!";
+}
+
+newGame();
 
 </script>
 
