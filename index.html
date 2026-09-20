@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>Пазл</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        background: #111;
+        color: white;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 15px;
+    }
+
+    .game {
+        width: 100%;
+        max-width: 500px;
+        text-align: center;
+    }
+
+    h1 {
+        margin: 0 0 10px;
+        font-size: 28px;
+    }
+
+    .info {
+        margin-bottom: 15px;
+        font-size: 16px;
+        opacity: 0.9;
+    }
+
+    #board {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+        gap: 2px;
+        background: #000;
+        padding: 2px;
+        border-radius: 10px;
+        overflow: hidden;
+        touch-action: none;
+        user-select: none;
+    }
+
+    .tile {
+        position: relative;
+        background-image: url("puzzle.jpg");
+        background-size: 400% 400%;
+        border-radius: 3px;
+        cursor: grab;
+        touch-action: none;
+    }
+
+    .tile.dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+
+    .selected {
+        outline: 4px solid white;
+        z-index: 5;
+    }
+
+    button {
+        margin-top: 18px;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 10px;
+        background: white;
+        color: #111;
+        font-size: 17px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    #message {
+        margin-top: 15px;
+        font-size: 22px;
+        font-weight: bold;
+        min-height: 30px;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="game">
+
+    <h1>🧩 Пазл</h1>
+
+    <div class="info">
+        Перетягуй деталі пальцем
+    </div>
+
+    <div id="board"></div>
+
+    <button onclick="newGame()">🔄 Перемішати</button>
+
+    <div id="message"></div>
+
+</div>
+
+<script>
+
+const board = document.getElementById("board");
+const message = document.getElementById("message");
+
+const size = 4;
+const total = size * size;
+
+let tiles = [];
+let draggedTile = null;
+
+function createGame() {
+
+    board.innerHTML = "";
+    message.textContent = "";
+
+    tiles = [];
+
+    for (let i = 0; i < total; i++) {
+
+        const tile = document.createElement("div");
+
+        tile.className = "tile";
+
+        tile.dataset.correct = i;
+
+        const row = Math.floor(i / size);
+        const col = i % size;
+
+        tile.style.backgroundPosition =
+            `${col * 100 / (size - 1)}% ${row * 100 / (size - 1)}%`;
+
+        tiles.push(tile);
+    }
+
+    shuffle(tiles);
+
+    tiles.forEach(tile => board.appendChild(tile));
+
+    addDragEvents();
+}
+
+function shuffle(array) {
+
+    for (let i = array.length - 1; i > 0; i--) {
+
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+
+    // Не дозволяємо випадково отримати вже складений пазл
+    if (isSolved()) {
+        shuffle(array);
+    }
+}
+
+function addDragEvents() {
+
+    const allTiles = document.querySelectorAll(".tile");
+
+    allTiles.forEach(tile => {
+
+        tile.addEventListener("pointerdown", startDrag);
+
+    });
+}
+
+function startDrag(event) {
+
+    event.preventDefault();
+
+    draggedTile = event.currentTarget;
+
+    draggedTile.classList.add("dragging");
+
+    draggedTile.setPointerCapture(event.pointerId);
+
+    draggedTile.addEventListener("pointerup", endDrag, { once: true });
+}
+
+function endDrag(event) {
+
+    if (!draggedTile) return;
+
+    draggedTile.classList.remove("dragging");
+
+    const x = event.clientX;
+    const y = event.clientY;
+
+    draggedTile.style.pointerEvents = "none";
+
+    const target = document.elementFromPoint(x, y);
+
+    draggedTile.style.pointerEvents = "auto";
+
+    if (target && target.classList.contains("tile") && target !== draggedTile) {
+
+        swapTiles(draggedTile, target);
+    }
+
+    draggedTile = null;
+
+    checkWin();
+}
+
+function swapTiles(first, second) {
+
+    const firstNext = first.nextSibling;
+    const secondNext = second.nextSibling;
+
+    if (firstNext === second) {
+
+        board.insertBefore(second, first);
+
+    } else if (secondNext === first) {
+
+        board.insertBefore(first, second);
+
+    } else {
+
+        board.insertBefore(first, secondNext);
+        board.insertBefore(second, firstNext);
+    }
+}
+
+function isSolved() {
+
+    const currentTiles = document.querySelectorAll(".tile");
+
+    for (let i = 0; i < total; i++) {
+
+        if (Number(currentTiles[i].dataset.correct) !== i) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function checkWin() {
+
+    if (isSolved()) {
+
+        message.textContent = "🎉 Пазл складено!";
+
+        document.querySelectorAll(".tile").forEach(tile => {
+            tile.style.cursor = "default";
+        });
+    }
+}
+
+function newGame() {
+    createGame();
+}
+
+createGame();
+
+</script>
+
+</body>
+</html>
